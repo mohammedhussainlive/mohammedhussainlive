@@ -1,0 +1,32 @@
+
+# Variable used in docker run command
+
+
+jobs:
+  - job: Checkov_analysis
+    displayName: Publish Checkov Result
+    pool:
+     vmImage: 'ubuntu-latest'
+    timeoutInMinutes: 0
+    variables:
+     - name:  terraform_folder
+       value: $(System.DefaultWorkingDirectory)/src/01-iac
+    steps:
+      - script: |
+            mkdir CheckovReport
+            docker pull bridgecrew/checkov
+            docker run --volume $(terraform_folder):/tf bridgecrew/checkov --directory /tf --compact --output junitxml > $(System.DefaultWorkingDirectory)/src/Checkov-Report.xml --skip-check CKV_AZURE_112,CKV_AZURE_9
+        displayName: Run Static Code analysis for Terraform using Checkov in a Docker container
+
+        # Publish results of Checkov analysis as Test results to the pipeline
+      - task: PublishTestResults@2
+        displayName: Publish Checkov Test Results
+        condition: succeededOrFailed()
+        inputs:
+            testResultsFormat: 'JUnit'
+            testResultsFiles: '**/*Checkov-Report.xml'
+            searchFolder: '$(System.DefaultWorkingDirectory)/src'
+            mergeTestResults: false
+            testRunTitle: Checkov Scan
+            failTaskOnFailedTests: false
+            publishRunAttachments: true

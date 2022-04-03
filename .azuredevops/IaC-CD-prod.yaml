@@ -1,0 +1,24 @@
+name: IaC-CD-prod $(Rev:.r) - $(Date:yyyy-MM-dd)
+trigger:
+  branches:
+    include:
+    - main
+    - prod
+    - pre-prod
+  paths:
+    include:
+    - src/01-iac/*
+variables:
+  - group: dbc-pi-vg-uat-01
+pool:
+     vmImage: 'ubuntu-latest'
+stages:
+  - template: templates/IaC-CD-Stages-Template.yaml
+    parameters:
+      prefix: '$(prefix)'
+      azureServiceConnectionName: '$(AzureServiceConnectionName)'
+      environmentName: 'prod'
+      path: 'src/01-iac'
+      varFile: 'src/01-iac/vars_prod.tfvars'
+      publishOutput: true
+      UtilResourceGroupName: '$(UtilResourceGroupName)'
